@@ -13,29 +13,14 @@ import re
 import random
 from collections import Counter
 import itertools 
+from sklearn.decomposition import PCA
 
 
 from os import listdir
 """
 TODO 0: Find out the image shape as a tuple and include it in your report.
 """
-IMG_SHAPE = ()
-def load_data(data_dir, top_n=10):
-	"""
-	Load the data and return a list of images and their labels.
-	:param data_dir: The directory where the data is located
-	:param top_n: The number of people with the most images to use
-	Suggested return values, feel free to change as you see fit
-	:return data_top_n: A list of images of only people with top n number of images
-	:return target_top_n: Corresponding labels of the images
-	:return target_names: A list of all labels(names)
-	:return target_count: A dictionary of the number of images per person
-	"""
-
-
-
-
-
+IMG_SHAPE = (64,64)
 
 def load_data(data_dir, top_n=10):
 	"""
@@ -82,7 +67,7 @@ def load_data(data_dir, top_n=10):
 	name_ref = []
 	# populating reference names for lookin at original files
 	for i in range (len(top_n_)):
-		name_ref.append((target_names[top_n_[i][0]],top_n_[i][0]))
+		name_ref.append((target_names[top_n_[i][0]],top_n_[i][0], (top_n_[i][1]) ))
 	print(name_ref)
 
 	
@@ -97,13 +82,16 @@ def load_data(data_dir, top_n=10):
 				data_top_n.append(data[j])
 	# print(len(target_top_n))
 	# print(len(data_top_n))
-	# print(type(data_top_n[0]))
+	# print((data_top_n[0].shape))
 
 
-	
+	print(name_ref[:][0])
+	print(name_ref[0][:])
+	print(name_ref[:][2])
 	# You can plot the histogram using plt.bar()
-	plt.bar(target_count.keys(), target_count.values(), width = 1)
-	# plt.show() #uncomment to show plot
+	# plt.bar(target_count.keys(), target_count.values(), width = 1)
+	plt.bar(name_ref[:][0], name_ref[:][2].astype(int), width = 20)
+	plt.show() #uncomment to show plot
 
 	# autofmt_xdate() is also useful for rotating the x-axis labels
 	return data_top_n, target_top_n, target_names, target_count
@@ -141,22 +129,63 @@ def perform_pca(data_train, data_test, data_noneface, n_components, plot_PCA=Fal
 	f) Return the principal components and transformed training, testing, and nonface data
 	"""
 	# YOUR CODE HERE
+	# flattening images
+	data_train_flat = []
+	data_test_flat = []
+	data_nonface_flat = []
+	print("-----PCA FUNCTION-----")
+	for img in data_train:
+		data_train_flat.append(img.flatten())
+	for img in data_test:
+		data_test_flat.append(img.flatten())
+	for img in data_noneface:
+		data_nonface_flat.append(img.flatten())
+	# print(len(data_train_flat))
+	# print((data_train_flat[0].shape))
+	# print((data_nonface_flat[0].shape))
+
 	# You can use the StandardScaler() function to standardize the data
-	data_train_centered = None
-	data_test_centered = None
-	data_noneface_centered = None
+	scaler = StandardScaler()
+	data_train_centered = scaler.fit_transform(data_train_flat)
+	data_test_centered = scaler.transform(data_test_flat)
+	data_noneface_centered = scaler.transform(data_nonface_flat)
+	# print(len(data_train_centered))
+	# print(type(data_train_centered[0]))
+	# print((data_train_centered[0].shape))
+	# print((data_train_centered[0][0]))
+	# print('-----')
+
 	# You can use the decomposition.PCA() and function to perform PCA
 	# You can check the example code in the documentation using the links below
 	# https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html
-	pca = None
+	pca = PCA(n_components = n_components)
 	# You can use the pca.transform() function to transform the data
-	data_train_pca = None
-	data_test_pca = None
-	data_noneface_pca = None
+	data_train_pca = pca.fit_transform(data_train_centered)
+	data_test_pca = pca.transform(data_test_centered)
+	data_noneface_pca = pca.transform(data_noneface_centered)
+	# print(len(data_train_pca))
+	# print(type(data_train_pca[0]))
+	# print((data_train_pca[0].shape))
+	# print((data_train_pca[0][0]))
+
+	# print('-0---')
+	# print(data_train_pca[:,0])
+
 	# You can use the scatter3D() function to plot the transformed data
 	# Please not that 3 principal components may not be enough to separate the data
 	# So your plot of face and nonface data may not be clearly separated
-	# if plot_PCA:
+	if plot_PCA:
+		fig = plt.figure(figsize=(10, 8))
+		ax = fig.add_subplot(111, projection='3d')
+		ax.scatter3D(data_train_pca[:,0], data_train_pca[:,1], data_train_pca[:,2],  label='Training Data', c='b' )
+		ax.scatter3D(data_noneface_pca[:,0], data_noneface_pca[:,1], data_noneface_pca[:,2],  label='Nonface Data', c='g' )
+		ax.set_xlabel('PC 1')
+		ax.set_ylabel('PC 2')
+		ax.set_zlabel('PC 3')
+		ax.legend()
+		plt.title('PCA of Training and Nonface Data')
+		plt.show()
+
 	return pca, data_train_pca, data_test_pca, data_noneface_pca
 
 
@@ -164,14 +193,19 @@ def plot_eigenfaces(pca):
 	"""
 	TODO 4: Plot the first 8 eigenfaces. Include the plot in your report.
 	"""
+	print(pca.components_.shape)
+	
 	n_row = 2
 	n_col = 4
 	fig, axes = plt.subplots(n_row, n_col, figsize=(12, 6))
 	for i in range(n_row * n_col):
+		
 		# YOUR CODE HERE
 		# The eigenfaces are the principal components of the training data
 		# Since we have flattened the images, you can use reshape() to reshape to the original image shape
-		pass
+		plt.subplot(n_row, n_col, i+1)
+		plt.imshow(pca.components_[i].reshape(IMG_SHAPE), cmap='gray')
+		
 	plt.show()
 
 
@@ -202,14 +236,14 @@ if __name__ == '__main__':
 	data, target, target_names, target_count = load_data('ps8a-dataset/lfw_crop/', top_n=10)
 	data_train, data_test, target_train, target_test = train_test_split(data, target, test_size=0.25, random_state=42)
 	data_noneface = load_data_nonface('ps8a-dataset/imagenet_val1000_downsampled/')
-	print("Total dataset size:", data.shape[0])
-	print("Training dataset size:", data_train.shape[0])
-	print("Test dataset size:", data_test.shape[0])
-	print("Nonface dataset size:", data_noneface.shape[0])
+	print("Total dataset size:", len(data))
+	print("Training dataset size:", len(data_train))
+	print("Test dataset size:", len(data_test))
+	print("Nonface dataset size:", len(data_noneface))
 
 	# Perform PCA, you can change the number of components as you wish
 	pca, data_train_pca, data_test_pca, data_noneface_pca = perform_pca(
-		data_train, data_test, data_noneface, n_components=3, plot_PCA=True
+		data_train, data_test, data_noneface, n_components=8, plot_PCA=True
 		)
 	
 
