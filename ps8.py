@@ -80,20 +80,18 @@ def load_data(data_dir, top_n=10):
 			if(re.sub(r'_\d{4}.pgm', '', file_list[j]).replace('_', ' ') == name_ref[i][0]):
 				target_top_n.append(i)
 				data_top_n.append(data[j])
-	# print(len(target_top_n))
-	# print(len(data_top_n))
-	# print((data_top_n[0].shape))
 
-
-	print(name_ref[:][0])
-	print(name_ref[0][:])
-	print(name_ref[:][2])
-	# You can plot the histogram using plt.bar()
-	# plt.bar(target_count.keys(), target_count.values(), width = 1)
-	plt.bar(name_ref[:][0], name_ref[:][2].astype(int), width = 20)
+	name_labels_plt = []
+	count_plt = []
+	for i in range(len(name_ref)):
+		name_labels_plt.append(name_ref[i][0])
+		count_plt.append(name_ref[i][2])
+	
+	fig = plt.figure()
+	plt.bar(name_labels_plt, count_plt)
+	fig.autofmt_xdate()
 	plt.show() #uncomment to show plot
 
-	# autofmt_xdate() is also useful for rotating the x-axis labels
 	return data_top_n, target_top_n, target_names, target_count
 
 
