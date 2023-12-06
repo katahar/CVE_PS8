@@ -118,8 +118,11 @@ def load_data_nonface(data_dir):
 	"""
 	# YOUR CODE HERE
 	# Take a look at the load_data() function for reference
-	file_list = []
-	data = np.array([])
+
+	file_list = [fname for fname in listdir(data_dir) if fname.endswith('.png')]
+	data = np.array([cv2.imread(data_dir + fname, 0) for fname in file_list])
+	# print("non-face data size" )
+	# print(len(data))
 	return data
 
 def perform_pca(data_train, data_test, data_noneface, n_components, plot_PCA=False):
