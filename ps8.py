@@ -11,6 +11,10 @@ from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import ConfusionMatrixDisplay
 import re
 import random
+from collections import Counter
+import itertools 
+
+
 from os import listdir
 """
 TODO 0: Find out the image shape as a tuple and include it in your report.
@@ -27,90 +31,82 @@ def load_data(data_dir, top_n=10):
 	:return target_names: A list of all labels(names)
 	:return target_count: A dictionary of the number of images per person
 	"""
+
+
+
+
+
+
+def load_data(data_dir, top_n=10):
+	"""
+	Load the data and return a list of images and their labels.
+	:param data_dir: The directory where the data is located
+	:param top_n: The number of people with the most images to use
+	Suggested return values, feel free to change as you see fit
+	:return data_top_n: A list of images of only people with top n number of images
+	:return target_top_n: Corresponding labels of the images
+	:return target_names: A list of all labels(names)
+	:return target_count: A dictionary of the number of images per person
+	"""
 	# read and randomize list of file names
 	file_list = [fname for fname in listdir(data_dir) if fname.endswith('.pgm')]
-	file_list = sorted(list(file_list))
-	# print(file_list)
-
-	names = ["ignore"]
-	counts = [-1]
-	for i in range(len(file_list)):
-		temp_name = re.sub(r'_\d{4}.pgm', '', file_list[i]).replace('_', ' ')
-		# previously unseen name
-		if(names[-1] != temp_name):
-			names.append(temp_name)
-			counts.append(1)
-		else:
-			counts[-1] = counts[-1]+1
-
-
-
-	# get labels for each image (numerically)
-	target = np.arange(0,len(names)-1)[:, np.newaxis]
-	# print(target)
-
-	print(len(names[1:]))
-	print(len(counts[1:]))
-	print(target.size)
-	names_sorted = np.column_stack((names[1:], counts[1:], target ))
-	print(names_sorted)
-
-	# sorting by the second column, the count. ascending order
-	names_sorted = names_sorted[names_sorted[:, 1].argsort()]
-	# reversing to descending order
-	names_sorted= np.flip(names_sorted,0)
-
-	# print("slice: ")
-	# print(names_sorted[:,0])
-	plt.bar(names_sorted[:,2], names_sorted[:,1])
-	plt.xlabel("People")
-	plt.ylabel("Number of counts")
-	plt.title("Number of Images per person")
-	plt.xticks([0, 1000, 2000, 3000, 4000,5000, 6000]) 
-	plt.yticks([0, 100, 200, 300, 400]) 
-	plt.show()
-	
-	
-
-
-
-	# random.shuffle(file_list)
-	# name_list = [re.sub(r'_\d{4}.pgm', '', name).replace('_', ' ') for name in file_list]
-	# print(type(name_list))
-
-	
+	random.shuffle(file_list)
+	name_list = [re.sub(r'_\d{4}.pgm', '', name).replace('_', ' ') for name in file_list]
 	# get a list of all labels
-	# target_names = sorted(list(set(name_list)))
-	
-
-	
+	target_names = sorted(list(set(name_list)))
+	# get labels for each image
+	target = np.array([target_names.index(name) for name in name_list])
 	# read in all images
 	data = np.array([cv2.imread(data_dir + fname, 0) for fname in file_list])
 
 	"""
 	TODO 1: Only preserve images of 10 people with the highest occurence, then plot
-		a histogram of the number of images per person in the preserved dataset.
-		Include the histogram in your report.
+	a histogram of the number of images per person in the preserved dataset.
+	Include the histogram in your report.
 	"""
-	# print(name_list)
-	# print(target_names)
-	# print(target)
-	# print(data)
+
 
 	# YOUR CODE HERE
 	# target_count is a dictionary of the number of images per person
 	# where the key is an index to label ('target'), and the value is the number of images
 	# Try to use sorted() to sort the dictionary by value, then only keep the first 10 items of the output list.
 	target_count = {}
+	target_count = Counter(target)
+	# target_count = sorted(target_count)
+	# print(type(target_count))
+	# print(target_count)
+	
 	# data_top_n is a list of labels of only people with top n number of images
+	top_n_ = target_count.most_common(top_n)
+	
+	name_ref = []
+	# populating reference names for lookin at original files
+	for i in range (len(top_n_)):
+		name_ref.append((target_names[top_n_[i][0]],top_n_[i][0]))
+	print(name_ref)
+
+	
+	print(type(top_n_))
+	print(top_n_)
 	target_top_n = []
 	data_top_n = []
+	for i in range(len(name_ref)):
+		for j in range(len(file_list)):
+			if(re.sub(r'_\d{4}.pgm', '', file_list[j]).replace('_', ' ') == name_ref[i][0]):
+				target_top_n.append(i)
+				data_top_n.append(data[j])
+	# print(len(target_top_n))
+	# print(len(data_top_n))
+	# print(type(data_top_n[0]))
+
+
+	
 	# You can plot the histogram using plt.bar()
+	plt.bar(target_count.keys(), target_count.values(), width = 1)
+	# plt.show() #uncomment to show plot
+
 	# autofmt_xdate() is also useful for rotating the x-axis labels
 	return data_top_n, target_top_n, target_names, target_count
-
-
-
 
 
 def load_data_nonface(data_dir):
@@ -159,6 +155,8 @@ def perform_pca(data_train, data_test, data_noneface, n_components, plot_PCA=Fal
 	# So your plot of face and nonface data may not be clearly separated
 	# if plot_PCA:
 	return pca, data_train_pca, data_test_pca, data_noneface_pca
+
+
 def plot_eigenfaces(pca):
 	"""
 	TODO 4: Plot the first 8 eigenfaces. Include the plot in your report.
@@ -172,6 +170,8 @@ def plot_eigenfaces(pca):
 		# Since we have flattened the images, you can use reshape() to reshape to the original image shape
 		pass
 	plt.show()
+
+
 def train_classifier(data_train_pca, target_train):
 	"""
 	TODO 5: OPTIONAL: Train a classifier on the training data.
@@ -203,12 +203,20 @@ if __name__ == '__main__':
 	print("Training dataset size:", data_train.shape[0])
 	print("Test dataset size:", data_test.shape[0])
 	print("Nonface dataset size:", data_noneface.shape[0])
+
 	# Perform PCA, you can change the number of components as you wish
 	pca, data_train_pca, data_test_pca, data_noneface_pca = perform_pca(
 		data_train, data_test, data_noneface, n_components=3, plot_PCA=True
 		)
+	
+
+
 	# Plot the first 8 eigenfaces. To do this, make sure n_components is at least 8
 	plot_eigenfaces(pca)
+	
+	
+	
+	
 	"""
 	Start of PS 8-2
 	This part is optional. You will get extra credits if you complete this part.
